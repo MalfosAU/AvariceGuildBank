@@ -47,7 +47,7 @@ local buttonIgnore -- Widget for action button
 local buttonSync -- Widget for action button
 
 function AvariceGuildBank:OnInitialize()
-	self.db = LibStub("AceDB-3.0"):New("AvariceGuildBankDB_Dev")
+	self.db = LibStub("AceDB-3.0"):New("AvariceGuildBankDB")
 	if not self.db.realm.transactions then
 		self.db.realm.transactions = {}
 	end
@@ -1337,7 +1337,7 @@ function AvariceGuildBank:LogError(ErrorText, TellMalf)
 end
 
 function AvariceGuildBank:ClearDatabase(input)
-	AvariceGuildBankDB_Dev = {}
+	AvariceGuildBankDB = {}
 	ReloadUI()
 end
 
@@ -1359,28 +1359,3 @@ AvariceGuildBank:RegisterChatCommand("avaricecleardb", "ClearDatabase")
 AvariceGuildBank:RegisterChatCommand("avaricereqver", "SendVersionRequest")
 AvariceGuildBank:RegisterChatCommand("avaricegeneratetest", "GenerateTestData")
 AvariceGuildBank:RegisterChatCommand("avaricegb", "ShowMainFrame")
-
-
-
-
-     
-
- 
-
- 
-
--- TODO LIST
-
--- Button tooltips?
--- ?? Add a readout of how much you have donated this week
-
-
--- Add a readme
-
--- Before release:
--- Change default guild name to Avarice
-	-- Disable this edit box
--- Change the SavedVariable from _Dev to normal
--- Clear everything and check all defaults are sane.
--- Remove git
--- Remove or disable dev test slash commands
