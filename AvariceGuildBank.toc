@@ -1,9 +1,9 @@
 ## Interface: 20504
 ## Title: Avarice Guild Bank
 ## Notes: Assists in management of the Avarice guild bank.
-## Version: 027
+## Version: 100
 ## Author: Malfos-Remulos
-## SavedVariables: AvariceGuildBankDB_Dev
+## SavedVariables: AvariceGuildBankDB
 ##
 ## LoadOnDemand: 0
 
