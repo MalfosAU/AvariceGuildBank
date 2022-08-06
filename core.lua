@@ -21,7 +21,11 @@ local messagePrefixVersion = "AvariceGB_Ver"
 local messagePrefixVersion_Request = "AvariceGB_Ver_R"
 local messagePrefixTransactionLog = "AvariceGB_Log"
 local messagePrefixSyncRequest = "AvariceGB_Sync"
+local messagePrefixSyncResponse = "AvariceGB_Sync_R"
 
+-- SYNCHRONISATION FEATURE
+local syncInProgress = false
+local expectedSyncReceived = {} -- Table with ["name"] = bSyncCompleted
 
 local containerTransactionLog -- Container frame which displays the transaction log
 local transactionLogRowFrames -- Table containing all rows shown in the transaction log
@@ -88,6 +92,7 @@ function AvariceGuildBank:OnEnable()
 	AvariceGuildBank:RegisterComm(messagePrefixVersion_Request)
 	AvariceGuildBank:RegisterComm(messagePrefixTransactionLog)
 	AvariceGuildBank:RegisterComm(messagePrefixSyncRequest)
+	AvariceGuildBank:RegisterComm(messagePrefixSyncResponse)
 end
 
 function AvariceGuildBank:OnDisable()
@@ -1075,12 +1080,49 @@ function AvariceGuildBank:OnCommReceived(prefix, payload, distribution, sender)
     -- Handle 'data'
 	if prefix == messagePrefixTransactionLog then
 		AvariceGuildBank:ParseReceivedTransactionLog(data)
+
+		-- If this was whispered, then it is in response to a sync request, so handle it appropriately
+		if distribution == "WHISPER" then
+			expectedSyncReceived[sender] = true
+			AvariceGuildBank:UpdateSyncState()
+		end
 	elseif prefix == messagePrefixVersion then
 		AvariceGuildBank:Print("[VERSION] " ..data .. " : " .. sender)
 	elseif prefix == messagePrefixVersion_Request then
 		AvariceGuildBank:SendVersion(sender)
 	elseif prefix == messagePrefixSyncRequest then
-		AvariceGuildBank:WhisperTransactionLog(sender)
+		AvariceGuildBank:SendSyncResponse(sender)
+	elseif prefix == messagePrefixSyncResponse then
+		expectedSyncReceived[sender] = false
+		AvariceGuildBank:UpdateSyncState()
+	end
+end
+
+function AvariceGuildBank:StartSync()
+	syncInProgress = true
+	expectedSyncReceived = {}
+	buttonSync:SetDisabled(true)
+	AvariceGuildBank:TransmitComm(messagePrefixSyncRequest, "WHISPER", "GUILD")
+end
+
+function AvariceGuildBank:UpdateSyncState()
+	-- Obtain a count of how many syncs of those expected have been completed, and total expected
+	local completedSyncs = 0
+	local totalExpected = 0
+	for k, v in pairs(expectedSyncReceived) do
+		totalExpected = totalExpected + 1
+		if v then
+			completedSyncs = completedSyncs + 1
+		end
+	end
+
+	if completedSyncs == totalExpected then
+		syncInProgress = false
+		buttonSync:SetText("Sync")
+		buttonSync:SetDisabled(false)
+		expectedSyncReceived = {}
+	else
+		buttonSync:SetText(completedSyncs .. "/" .. totalExpected)
 	end
 end
 
@@ -1157,7 +1199,9 @@ function AvariceGuildBank:SetProcessingState(State, Action)
 	-- Action buttons
 	buttonAwardEP:SetDisabled(State)
 	buttonIgnore:SetDisabled(State)
-	buttonSync:SetDisabled(State)
+	if not syncInProgress then
+		buttonSync:SetDisabled(State)
+	end
 
 	if State then
 		if Action == "AwardEP" then
@@ -1303,7 +1347,12 @@ function AvariceGuildBank:WhisperTransactionLog(Target)
 end
 
 function AvariceGuildBank:SendSyncRequest()
-	AvariceGuildBank:TransmitComm(messagePrefixSyncRequest, "WHISPER", "GUILD")
+	AvariceGuildBank:StartSync()
+end
+
+function AvariceGuildBank:SendSyncResponse(Target)
+	AvariceGuildBank:TransmitComm(messagePrefixSyncResponse, GetAddOnMetadata("AvariceGuildBank", "version"), "WHISPER", Target)
+	C_Timer.After(5, function() AvariceGuildBank:WhisperTransactionLog(Target) end)
 end
 
 function AvariceGuildBank:BroadcastVersion()
