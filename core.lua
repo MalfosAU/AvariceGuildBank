@@ -67,8 +67,14 @@ function AvariceGuildBank:OnInitialize()
 		self.db.realm.settings["filterCustomFrom"] = "01/01/1970"
 		self.db.realm.settings["filterCustomTo"] = "01/01/1970"
 		self.db.realm.settings["filterName"] = ""
+		self.db.realm.settings["printSync"] = true
 		
 		self.db.realm.settings.minimap = { hide = false }
+	end
+
+	-- Setup defaults for savedvariables bits added
+	if self.db.realm.settings["printSync"] == nil then
+		self.db.realm.settings["printSync"] = true
 	end
 
 	-- Set up minimap icon
@@ -753,6 +759,28 @@ function AvariceGuildBank:DrawFrame_Settings(container)
 				labelMinimapIconShow:SetText("Enables/disables the minimap icon.")
 				labelMinimapIconShow:SetRelativeWidth(0.7)
 				settingsScroll:AddChild(labelMinimapIconShow)
+
+
+				local checkboxPrintSyncMessages = AceGUI:Create("CheckBox")
+				checkboxPrintSyncMessages:SetRelativeWidth(0.25)
+				checkboxPrintSyncMessages:SetLabel("Print Sync Messages")
+				checkboxPrintSyncMessages:SetValue(self.db.realm.settings["printSync"])
+				checkboxPrintSyncMessages:SetCallback(
+					"OnValueChanged",
+					function(widget, callback, value)
+						self.db.realm.settings["printSync"] = value
+					end
+				)
+				settingsScroll:AddChild(checkboxPrintSyncMessages)
+
+				local labelPrintSyncMessagesSpacer = AceGUI:Create("Label")
+				labelPrintSyncMessagesSpacer:SetRelativeWidth(0.05)
+				settingsScroll:AddChild(labelPrintSyncMessagesSpacer)
+
+				local labelPrintSyncMessages = AceGUI:Create("Label")
+				labelPrintSyncMessages:SetText("Sets whether messages will be printed to the chat window as you receive data during a sync.")
+				labelPrintSyncMessages:SetRelativeWidth(0.7)
+				settingsScroll:AddChild(labelPrintSyncMessages)
 				
 
 			local headingEPAward = AceGUI:Create("Heading")
@@ -1080,9 +1108,11 @@ function AvariceGuildBank:OnCommReceived(prefix, payload, distribution, sender)
     -- Handle 'data'
 	if prefix == messagePrefixTransactionLog then
 		AvariceGuildBank:ParseReceivedTransactionLog(data)
-
 		-- If this was whispered, then it is in response to a sync request, so handle it appropriately
 		if distribution == "WHISPER" then
+			if self.db.realm.settings["printSync"] then
+				AvariceGuildBank:Print("Received transaction log from " .. sender)
+			end
 			expectedSyncReceived[sender] = true
 			AvariceGuildBank:UpdateSyncState()
 		end
@@ -1122,7 +1152,7 @@ function AvariceGuildBank:UpdateSyncState()
 		buttonSync:SetDisabled(false)
 		expectedSyncReceived = {}
 	else
-		buttonSync:SetText(completedSyncs .. "/" .. totalExpected)
+		buttonSync:SetText("Syncing: " .. completedSyncs .. "/" .. totalExpected)
 	end
 end
 
