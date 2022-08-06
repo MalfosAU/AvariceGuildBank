@@ -1089,7 +1089,9 @@ function AvariceGuildBank:GUILDBANK_UPDATE_WITHDRAWMONEY(event)
 	-- loaded until you access the guild bank, so we can just check if the GuildBankFrame exists when this event
 	-- fires to see if it's a legit event that we need to handle.
 	if (GuildBankFrame) then
-		C_Timer.After(0.5, function() AvariceGuildBank:ProcessTransaction() end)
+		if GuildBankFrame:IsShown() then
+			C_Timer.After(0.5, function() AvariceGuildBank:ProcessTransaction() end)
+		end
 	end
 end
 
