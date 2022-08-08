@@ -1151,6 +1151,7 @@ function AvariceGuildBank:UpdateSyncState()
 		buttonSync:SetText("Sync")
 		buttonSync:SetDisabled(false)
 		expectedSyncReceived = {}
+		AvariceGuildBank:PopulateContainer_TransactionLog(AvariceGuildBank:SortedTransactionTable(self.db.realm.settings["sortBy"], self.db.realm.settings["sortAscending"]), transactionLogPages["current"])
 	else
 		buttonSync:SetText("Syncing: " .. completedSyncs .. "/" .. totalExpected)
 	end
